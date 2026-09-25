@@ -1,4 +1,5 @@
 import joblib
+import numpy as np
 import pandas as pd
 from flask import Flask, request, jsonify
 
@@ -37,6 +38,10 @@ def predict_superkart_sales():
     # Running the sample through the full pipeline (preprocessing + model)
     predicted_sales = superkart_model.predict(sample).tolist()[0]
 
+    # Sales revenue can never be negative in real life, so we floor the
+    # model's raw output at 0 before sending it back
+    predicted_sales = max(0, predicted_sales)
+
     return jsonify({'Predicted_Product_Store_Sales_Total': predicted_sales})
 
 
@@ -50,6 +55,9 @@ def predict_superkart_sales_batch():
 
     # Running the whole batch through the pipeline in one go
     batch_predictions = superkart_model.predict(batch_sample)
+
+    # Flooring every prediction at 0 for the same reason as above
+    batch_predictions = np.clip(batch_predictions, a_min=0, a_max=None)
 
     # Returning predictions keyed by row index (as JSON so it's easy to inspect)
     response = pd.Series(batch_predictions).to_json(orient='index')
